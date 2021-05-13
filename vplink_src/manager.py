@@ -385,6 +385,46 @@ class LinkManager:
                 PD.append((under[0], over[0], under[1], over[1]))
         return PD
 
+    def test_fcn(self):
+        ecrossing_components = self.crossing_components()
+        if ecrossing_components:
+            test_dt = [[] for i in range(len(ecrossing_components))]
+            new_dt = []
+            curr = 0
+            visited_crossings = []
+            crossings = sum(ecrossing_components, [])
+            for i, crossing in enumerate(self.Crossings):
+                visited_crossings.append(crossing)
+                num_virtual = 0
+                link_num = None
+                over = None
+                under = None
+                for num_links, ecrossings in enumerate(ecrossing_components):
+                    for ecrossing in ecrossings:
+                        curr += 1
+                        if ecrossing.crossing.is_virtual:
+                            num_virtual += 1
+                        else:
+                            if over is not None and under is not None:
+                                break
+                            if ecrossing.crossing == visited_crossings[-1]:
+                                if ecrossing.goes_over():
+                                    link_num = num_links
+                                    over = curr - num_virtual
+                                else:
+                                    under = curr - num_virtual
+                if link_num is None: continue
+                test_dt[link_num].append((over, under))
+                new_dt.append((over, under))
+                # ecro.crossing.hit1 = new_dt[i][0]
+                # ecro.crossing.hit2 = new_dt[i][1]
+                curr = 0
+
+        for link in test_dt:
+            link.sort(key=min)
+
+        print(f"Test DT:\n{test_dt}\n")
+
     def new_DT(self):
         ecrossing_components = self.crossing_components()
         if ecrossing_components:
@@ -399,14 +439,14 @@ class LinkManager:
             # go through every crossing, find which labels are under/over,
             # then append as a tuple to our dt convention.
             # crossings are denoted (under, over)
+            print('total crossings:', len(self.Crossings))
             for i, crossing in enumerate(self.Crossings):
-                print('total crossings:', len(self.Crossings))
                 visited_crossings.append(crossing)
                 num_virtual = 0
+                link_num = None
                 over = None
                 under = None
                 for num_links, ecrossings in enumerate(ecrossing_components):
-                    print("ecrossings,", len(ecrossings), 'components', len(ecrossing_components))
                     for ecrossing in ecrossings:
                         curr += 1
                         # check if the current crossing is virtual and count it if true
@@ -433,10 +473,10 @@ class LinkManager:
                 # reset current so that we don't double-count crossings
                 curr = 0
 
+        self.test_fcn()
         print(test_dt, sep='\n\n')
 
         new_dt = [i for i in new_dt if i != (None, None)]
-        print(new_dt)
         return new_dt
 
     def DT_code(self, alpha=False, signed=True, return_sizes=False):

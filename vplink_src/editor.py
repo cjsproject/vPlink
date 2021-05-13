@@ -176,7 +176,7 @@ class PLinkBase(LinkViewer):
         info_menu = Tk_.Menu(self.menubar, tearoff=0)
         info_menu.add_radiobutton(label='DT code', var=self.info_var,
                                   command=self.set_info, value=1)
-        info_menu.add_radiobutton(label='Alternative DT', var=self.info_var,
+        info_menu.add_radiobutton(label='Virtual DT', var=self.info_var,
                                   command=self.set_info, value=6)
         info_menu.add_radiobutton(label='Alphabetical DT', var=self.info_var,
                                   command=self.set_info, value=2)
