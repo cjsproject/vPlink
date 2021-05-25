@@ -38,10 +38,8 @@ class Palette:
         try:
             color = self.free_colors.pop(0)
             self.active_colors.append(color)
-            print(color, '\tin try')
             return color
         except IndexError as e:
-            print(color, '\tin except')
             self.active_colors.append('black')
             return 'black'
 

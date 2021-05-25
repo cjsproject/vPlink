@@ -227,7 +227,6 @@ class Smoother:
         self.curves = curves = []
         self.polygons = []
         for polyline, color in self.polylines:
-            print(polyline, color, sep='\t')
             n = len(curves)
             polygon = []
             for arc in polyline:

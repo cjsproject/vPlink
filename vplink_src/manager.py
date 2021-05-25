@@ -377,7 +377,8 @@ class LinkManager:
                 D = over_dict if ec.goes_over() else under_dict
                 D[ec.crossing] = (incoming, outgoing)
         PD = []
-        for crossing in self.Crossings:
+        crossings = [i for i in self.Crossings if not i.is_virtual]
+        for crossing in crossings:
             under, over = under_dict[crossing], over_dict[crossing]
             if crossing.sign() == 'RH':
                 PD.append((under[0], over[1], under[1], over[0]))
@@ -386,17 +387,17 @@ class LinkManager:
         return PD
 
     def test_fcn(self):
+        # new_dt revised for links
         ecrossing_components = self.crossing_components()
         if ecrossing_components:
             test_dt = [[] for i in range(len(ecrossing_components))]
             new_dt = []
             curr = 0
             visited_crossings = []
-            crossings = sum(ecrossing_components, [])
+            # crossings = sum(ecrossing_components, [])
             for i, crossing in enumerate(self.Crossings):
                 visited_crossings.append(crossing)
                 num_virtual = 0
-                link_num = None
                 over = None
                 under = None
                 for num_links, ecrossings in enumerate(ecrossing_components):
@@ -408,12 +409,12 @@ class LinkManager:
                             if over is not None and under is not None:
                                 break
                             if ecrossing.crossing == visited_crossings[-1]:
+
                                 if ecrossing.goes_over():
                                     link_num = num_links
                                     over = curr - num_virtual
                                 else:
                                     under = curr - num_virtual
-                if link_num is None: continue
                 test_dt[link_num].append((over, under))
                 new_dt.append((over, under))
                 # ecro.crossing.hit1 = new_dt[i][0]
@@ -428,7 +429,7 @@ class LinkManager:
     def new_DT(self):
         ecrossing_components = self.crossing_components()
         if ecrossing_components:
-            test_dt = [[] for i in range(len(ecrossing_components))]
+            # test_dt = [[] for i in range(len(ecrossing_components))]
             new_dt = []
             # curr is used instead of enums because
             # it can count the total crossings of
@@ -436,17 +437,19 @@ class LinkManager:
             # in order... we keep track of the labels by the value curr)
             curr = 0
             visited_crossings = []
+            link = False
             # go through every crossing, find which labels are under/over,
             # then append as a tuple to our dt convention.
             # crossings are denoted (under, over)
-            print('total crossings:', len(self.Crossings))
+            # print('total crossings:', len(self.Crossings))
             for i, crossing in enumerate(self.Crossings):
                 visited_crossings.append(crossing)
                 num_virtual = 0
-                link_num = None
+                # link_num = None
                 over = None
                 under = None
                 for num_links, ecrossings in enumerate(ecrossing_components):
+                    if num_links > 0: link = True
                     for ecrossing in ecrossings:
                         curr += 1
                         # check if the current crossing is virtual and count it if true
@@ -472,11 +475,21 @@ class LinkManager:
                 crossing.hit2 = new_dt[i][1]
                 # reset current so that we don't double-count crossings
                 curr = 0
-
-        self.test_fcn()
-        print(test_dt, sep='\n\n')
+        else:
+            return None
+        # self.test_fcn()
 
         new_dt = [i for i in new_dt if i != (None, None)]
+
+        new_dt.sort(key=min)
+
+        # print(new_dt, sep='\n\n')
+
+        # self.test_fcn()
+        new_dt.append(link)
+        if link:
+            return new_dt
+
         return new_dt
 
     def DT_code(self, alpha=False, signed=True, return_sizes=False):
@@ -543,7 +556,9 @@ class LinkManager:
 
     def new_Gauss(self):
         dt = self.new_DT()
+        link = dt.pop()
         gauss = []
+        #gauss = [0 for i in range(2*len(dt))]
         # seems to work, also has proper signs :)
         # iterates from 1 to twice the num of crossings
         # finds chronological order of crossings, takes the min
@@ -556,7 +571,7 @@ class LinkManager:
                     if i == crossing[1]:
                         temp *= -1
                     gauss.append(temp)
-
+        #gauss = [i if i < int(len(gauss)/2) else i-1 for i in gauss]
         return gauss
 
     def Gauss_code(self):
@@ -568,7 +583,6 @@ class LinkManager:
         """
         print('new gauss: ', self.new_Gauss())
         return self.new_Gauss()
-        """
         dt, sizes = self.DT_code(signed=False, return_sizes=True)
         if dt is None:
             return None
@@ -591,7 +605,6 @@ class LinkManager:
             gauss.append(tuple(counts[start:end]))
             start = end
         return gauss
-    """
 
     def BB_framing(self):
         """
@@ -638,7 +651,12 @@ class LinkManager:
         """
         code = self.new_DT()
         if code:
-            self.write_text(('DT: %s' % code).replace(', ', ','))
+            if code[-1]:
+                code.pop()
+                self.write_text("Virtual Links are a WIP: " + ('DT: %s' % code).replace(', ', ','))
+            else:
+                code.pop()
+                self.write_text(('DT: %s' % code).replace(', ', ','))
 
     def DT_alpha(self):
         """
