@@ -362,6 +362,25 @@ class LinkManager:
         """
         # We view an ecrossing as corresponding to the outgoing arc
         # of the diagram at the ecrossing.crossing.
+        dt = self.new_DT()
+        if dt:
+            link = dt.pop()
+            new_pd = []
+            max_val = 2*len(dt)
+            for crossing in dt:
+                under = crossing[0]
+                over = crossing[1]
+                p = over + 1
+                d = under + 1
+                if under == max_val:
+                    d = 1
+                elif over == max_val:
+                    p = 1
+                new_pd.append((over, d, under, p))
+            new_pd.append(link)
+            return new_pd
+        else:
+            return None
         try:
             components = self.crossing_components()
         except ValueError:
@@ -572,6 +591,7 @@ class LinkManager:
                         temp *= -1
                     gauss.append(temp)
         #gauss = [i if i < int(len(gauss)/2) else i-1 for i in gauss]
+        gauss.append(link)
         return gauss
 
     def Gauss_code(self):
@@ -581,7 +601,6 @@ class LinkManager:
         of crossings as is used for the DT code.  Requires that all
         components be closed.
         """
-        print('new gauss: ', self.new_Gauss())
         return self.new_Gauss()
         dt, sizes = self.DT_code(signed=False, return_sizes=True)
         if dt is None:
@@ -650,12 +669,11 @@ class LinkManager:
             as (over-label, under-label) for each crossing
         """
         code = self.new_DT()
+        link = code.pop()
         if code:
-            if code[-1]:
-                code.pop()
+            if link:
                 self.write_text("Virtual Links are a WIP: " + ('DT: %s' % code).replace(', ', ','))
             else:
-                code.pop()
                 self.write_text(('DT: %s' % code).replace(', ', ','))
 
     def DT_alpha(self):
@@ -673,16 +691,24 @@ class LinkManager:
         integers.
         """
         code = self.Gauss_code()
+        link = code.pop()
         if code:
-            self.write_text(('Gauss: %s' % code).replace(', ', ','))
+            if link:
+                self.write_text("Virtual Links are a WIP: " + ('Gauss: %s' % code).replace(', ', ','))
+            else:
+                self.write_text(('Gauss: %s' % code).replace(', ', ','))
 
     def PD_info(self):
         """
         Displays a PD code as a list of 4-tuples.
         """
         code = self.PD_code()
+        link = code.pop()
         if code:
-            self.write_text(('PD: %s' % code).replace(', ', ','))
+            if link:
+                self.write_text("Virtual Links are a WIP: " + ('PD: %s' % code).replace(', ', ','))
+            else:
+                self.write_text(('PD: %s' % code).replace(', ', ','))
 
     def BB_info(self):
         """
