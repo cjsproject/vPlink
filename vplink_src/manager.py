@@ -362,21 +362,25 @@ class LinkManager:
         """
         # We view an ecrossing as corresponding to the outgoing arc
         # of the diagram at the ecrossing.crossing.
-        dt = self.new_DT()
+        dt = self.new_DT(sign=True)
         if dt:
             link = dt.pop()
             new_pd = []
-            max_val = 2*len(dt)
+            max_val = 2 * len(dt)
             for crossing in dt:
-                under = crossing[0]
-                over = crossing[1]
-                p = over + 1
-                d = under + 1
-                if under == max_val:
+                a = crossing[0]
+                b = crossing[1]
+                c = a + 1
+                d = b + 1
+                if b == max_val:
                     d = 1
-                elif over == max_val:
-                    p = 1
-                new_pd.append((over, d, under, p))
+                elif a == max_val:
+                    c = 1
+                # if crossing.sign() == right-handed or left-handed crossing
+                if crossing[2] == 'RH':
+                    new_pd.append((a, b, c, d))
+                else:
+                    new_pd.append((a, d, c, b))
             new_pd.append(link)
             return new_pd
         else:
@@ -406,7 +410,7 @@ class LinkManager:
         return PD
 
     def test_fcn(self):
-        # new_dt revised for links
+        # test DT revised for links
         ecrossing_components = self.crossing_components()
         if ecrossing_components:
             test_dt = [[] for i in range(len(ecrossing_components))]
@@ -445,7 +449,7 @@ class LinkManager:
 
         print(f"Test DT:\n{test_dt}\n")
 
-    def new_DT(self):
+    def new_DT(self, sign=False):
         ecrossing_components = self.crossing_components()
         if ecrossing_components:
             # test_dt = [[] for i in range(len(ecrossing_components))]
@@ -489,7 +493,10 @@ class LinkManager:
                 # once over and under are found
                 # (which is guaranteed, we iterate through every single crossing)
                 # append it to our new dt convention
-                new_dt.append((over, under))
+                if sign:
+                    new_dt.append((over, under, crossing.sign()))
+                else:
+                    new_dt.append((over, under))
                 crossing.hit1 = new_dt[i][0]
                 crossing.hit2 = new_dt[i][1]
                 # reset current so that we don't double-count crossings
@@ -498,9 +505,12 @@ class LinkManager:
             return None
         # self.test_fcn()
 
-        new_dt = [i for i in new_dt if i != (None, None)]
-
-        new_dt.sort(key=min)
+        if sign:
+            new_dt = [i for i in new_dt if i[0] is not None and i[1] is not None]
+            new_dt.sort(key=lambda x: min(x[0], x[1]))
+        else:
+            new_dt = [i for i in new_dt if i != (None, None)]
+            new_dt.sort(key=min)
 
         # print(new_dt, sep='\n\n')
 
@@ -577,7 +587,7 @@ class LinkManager:
         dt = self.new_DT()
         link = dt.pop()
         gauss = []
-        #gauss = [0 for i in range(2*len(dt))]
+        # gauss = [0 for i in range(2*len(dt))]
         # seems to work, also has proper signs :)
         # iterates from 1 to twice the num of crossings
         # finds chronological order of crossings, takes the min
@@ -590,8 +600,52 @@ class LinkManager:
                     if i == crossing[1]:
                         temp *= -1
                     gauss.append(temp)
-        #gauss = [i if i < int(len(gauss)/2) else i-1 for i in gauss]
+        # gauss = [i if i < int(len(gauss)/2) else i-1 for i in gauss]
+
+        # count consecutive gauss, decrease each value greater than pivot by ++1 for each cycle over the reference
+        # then increase the reference at each step.
+        # add item to help menu 'convention' menu that explains virtual DT, Gauss, PD
+        # this all works, just has some +1/-1 issue somewhere in the iterations...
+        pivot = None
+        fixed_gauss = gauss.copy()
+
+        def count_cycle(splice, ind):
+            cycle = 0
+            for c in splice:
+                for j in splice[splice.index(c):]:
+                    if abs(j) == abs(c) and j != c:
+                        cycle += 1
+            print('before\n', gauss[ind:])
+            back_splice = update_gauss(cycle, gauss[ind:])
+            print(back_splice)
+            return cycle, back_splice
+
+        def update_gauss(cycles, splice):
+            tmp = []
+            for c in splice:
+                if abs(c) > pivot + cycles:
+                    if c > 0:
+                        c -= 1
+                    else:
+                        c += 1
+                tmp.append(c)
+            return tmp
+
+        for i, code in enumerate(gauss):
+            if i == 0:
+                continue
+            if abs(code) == abs(gauss[i - 1]) + 1:
+                continue
+            else:
+                if pivot is None:
+                    pivot = abs(gauss[i - 1])
+                if pivot:
+                    cyc, tail = count_cycle(gauss[:i+1], i)
+                    gauss = gauss[:i] + tail
+                print(f"nonconsecutive at {code}, cycles:{cyc}, pivot:{pivot+cyc}")
+
         gauss.append(link)
+
         return gauss
 
     def Gauss_code(self):
